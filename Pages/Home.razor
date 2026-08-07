@@ -1,0 +1,134 @@
+@page "/"
+@inject AlsDowngradeService Converter
+@inject IJSRuntime JS
+
+<PageTitle>ALS 12 → 11</PageTitle>
+
+<section class="card">
+    <div class="eyebrow">LOCAL · CLIENT-SIDE ONLY</div>
+    <h1>Ableton Live 12 → 11</h1>
+    <p class="lead">
+        Select a Live 12 <code>.als</code>. The file is decompressed, transformed and recompressed entirely in your browser.
+    </p>
+
+    <label class="drop-zone">
+        <InputFile OnChange="OnFileSelected" accept=".als,application/gzip" />
+        <span class="drop-title">Choose an .als file</span>
+        <span class="drop-subtitle">Nothing is uploaded to a server.</span>
+    </label>
+
+    @if (_fileName is not null)
+    {
+        <div class="file-row">
+            <div>
+                <strong>@_fileName</strong>
+                <div class="muted">@FormatBytes(_fileSize)</div>
+            </div>
+
+            <button class="primary" @onclick="ConvertAndDownload" disabled="@_busy">
+                @(_busy ? "Converting…" : "Convert & download")
+            </button>
+        </div>
+    }
+
+    @if (_error is not null)
+    {
+        <div class="message error">@_error</div>
+    }
+
+    @if (_result is not null)
+    {
+        <div class="report">
+            <h2>Last conversion</h2>
+            <dl>
+                <dt>Source</dt>
+                <dd>@_result.SourceCreator (@_result.SourceMinorVersion)</dd>
+                <dt>Target</dt>
+                <dd>Ableton Live 11.3.21 (11.0_11300)</dd>
+                <dt>Routing rewrites</dt>
+                <dd>@_result.RoutingReplacements</dd>
+            </dl>
+
+            <h3>Removed Live 12 XML nodes</h3>
+            <ul>
+                @foreach (var entry in _result.RemovedElements)
+                {
+                    <li><code>@entry.Key</code><span>@entry.Value</span></li>
+                }
+            </ul>
+
+            <h3>Removed Live 12 XML attributes</h3>
+            <ul>
+                @foreach (var entry in _result.RemovedAttributes)
+                {
+                    <li><code>@entry.Key</code><span>@entry.Value</span></li>
+                }
+            </ul>
+
+            <h3>Renamed Live 12 XML nodes</h3>
+            <ul>
+                <li><code>MidiEditorLaneModel → ExpressionLane</code><span>@_result.RenamedMidiEditorLaneModels</span></li>
+            </ul>
+        </div>
+    }
+
+    <p class="warning">
+        This is a structural downgrade, not a semantic emulation of Live 12. Devices/features that don't exist in Live 11 are removed by the conversion rule and can't magically work there.
+    </p>
+</section>
+
+@code {
+    private const long MaxAlsSize = 100L * 1024 * 1024;
+
+    private IBrowserFile? _file;
+    private string? _fileName;
+    private long _fileSize;
+    private bool _busy;
+    private string? _error;
+    private ConversionResult? _result;
+
+    private void OnFileSelected(InputFileChangeEventArgs args)
+    {
+        _file = args.File;
+        _fileName = _file.Name;
+        _fileSize = _file.Size;
+        _error = null;
+        _result = null;
+    }
+
+    private async Task ConvertAndDownload()
+    {
+        if (_file is null || _busy)
+            return;
+
+        _busy = true;
+        _error = null;
+
+        try
+        {
+            await using var input = _file.OpenReadStream(MaxAlsSize);
+            _result = await Converter.DowngradeAsync(input);
+
+            var outputName = Path.GetFileNameWithoutExtension(_file.Name) + "_11.als";
+            await using var output = new MemoryStream(_result.Data, writable: false);
+            using var streamRef = new DotNetStreamReference(output);
+
+            await JS.InvokeVoidAsync("alsDownloader.downloadFromStream", outputName, streamRef);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024d:0.0} KB";
+        return $"{bytes / (1024d * 1024d):0.0} MB";
+    }
+}
