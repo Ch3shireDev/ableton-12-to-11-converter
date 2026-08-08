@@ -4,20 +4,45 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/ableton-12-to-11-converter/" />
-    <title>ALS 12 → 11</title>
+    <title>Free Ableton Live 12 to 11 Converter</title>
     <link rel="stylesheet" href="css/app.css" />
 </head>
+
 <body>
-    <div id="app">
-        <div class="boot">Loading converter…</div>
-    </div>
+    <main>
+        <h1>Free Ableton Live 12 to 11 Converter</h1>
 
-    <div id="blazor-error-ui">
-        An unhandled error occurred.
-        <a href="." class="reload">Reload</a>
-        <span class="dismiss">×</span>
-    </div>
+        <p>
+            Convert Ableton Live 12 .als projects to Ableton Live 11
+            directly in your browser. Free, open source, and fully
+            client-side — your Ableton project is never uploaded anywhere.
+        </p>
 
+        <div id="app">
+            Loading converter...
+        </div>
+
+        <section>
+            <h2>Convert Ableton Live 12 projects to Live 11</h2>
+
+            <p>
+                Ableton Live cannot normally open projects saved by a newer
+                major version. This tool converts the XML structure inside an
+                Ableton Live Set (.als) from Live 12 format to a format
+                compatible with Live 11.
+            </p>
+        </section>
+
+        <section>
+            <h2>How the Ableton 12 to 11 converter works</h2>
+
+            <ol>
+                <li>Select your Ableton Live 12 .als file.</li>
+                <li>The file is decompressed and converted locally.</li>
+                <li>Download the converted Ableton Live 11 .als file.</li>
+            </ol>
+        </section>
+    </main>
     <script src="js/download.js"></script>
     <script src="_framework/blazor.webassembly.js"></script>
 </body>
